@@ -54,6 +54,8 @@ class PrefDialog : DialogFragment() {
 						prefs.getBoolean(Common.KEY_SPEAK_SCREEN_ON, true),
 						prefs.getBoolean(Common.KEY_SPEAK_HEADSET_OFF, true),
 						prefs.getBoolean(Common.KEY_SPEAK_HEADSET_ON, true),
+						prefs.getBoolean(Common.KEY_SPEAK_SPEAKER_NOT_ATTACHED, true),
+						prefs.getBoolean(Common.KEY_SPEAK_SPEAKER_ATTACHED, false),
 						prefs.getBoolean(Common.KEY_SPEAK_SILENT_ON, false)
 					)) { _, which, isChecked ->
 						prefs.edit().putBoolean(when (which) {
@@ -61,7 +63,9 @@ class PrefDialog : DialogFragment() {
 							1 -> Common.KEY_SPEAK_SCREEN_ON
 							2 -> Common.KEY_SPEAK_HEADSET_OFF
 							3 -> Common.KEY_SPEAK_HEADSET_ON
-							4 -> Common.KEY_SPEAK_SILENT_ON
+							4 -> Common.KEY_SPEAK_SPEAKER_NOT_ATTACHED
+							5 -> Common.KEY_SPEAK_SPEAKER_ATTACHED
+							6 -> Common.KEY_SPEAK_SILENT_ON
 							else -> throw IndexOutOfBoundsException()
 						}, isChecked).apply()
 					}.create()

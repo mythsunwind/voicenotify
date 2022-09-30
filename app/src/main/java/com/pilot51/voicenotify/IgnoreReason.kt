@@ -30,6 +30,8 @@ enum class IgnoreReason(
 	SCREEN_ON(R.string.reason_screen_on),
 	HEADSET_OFF(R.string.reason_headset_off),
 	HEADSET_ON(R.string.reason_headset_on),
+	SPEAKER_NOT_ATTACHED(R.string.reason_speaker_not_attached),
+	SPEAKER_ATTACHED(R.string.reason_speaker_attached),
 	APP(R.string.reason_app),
 	STRING(R.string.reason_string),
 	EMPTY_MSG(R.string.reason_empty_msg),

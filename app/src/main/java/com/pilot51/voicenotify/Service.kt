@@ -19,6 +19,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
@@ -62,6 +63,7 @@ class Service : NotificationListenerService() {
 	private var shouldRequestFocus = false
 	private lateinit var audioMan: AudioManager
 	private lateinit var telephony: TelephonyManager
+	private lateinit var bluetoothManager: BluetoothManager
 	private val stateReceiver = DeviceStateReceiver()
 	private var repeater: RepeatTimer? = null
 	private lateinit var shake: Shake
@@ -319,11 +321,17 @@ class Service : NotificationListenerService() {
 		if (isScreenOn() && !prefs.getBoolean(Common.KEY_SPEAK_SCREEN_ON, true)) {
 			ignoreReasons.add(IgnoreReason.SCREEN_ON)
 		}
-		if (!isHeadsetOn() && !prefs.getBoolean(Common.KEY_SPEAK_HEADSET_OFF, true)) {
+		if (!isHeadgearAttached() && !prefs.getBoolean(Common.KEY_SPEAK_HEADSET_OFF, true)) {
 			ignoreReasons.add(IgnoreReason.HEADSET_OFF)
 		}
-		if (isHeadsetOn() && !prefs.getBoolean(Common.KEY_SPEAK_HEADSET_ON, true)) {
+		if (isHeadgearAttached() && !prefs.getBoolean(Common.KEY_SPEAK_HEADSET_ON, true)) {
 			ignoreReasons.add(IgnoreReason.HEADSET_ON)
+		}
+		if (!isSpeakerAttached() && !prefs.getBoolean(Common.KEY_SPEAK_SPEAKER_NOT_ATTACHED, true)) {
+			ignoreReasons.add(IgnoreReason.SPEAKER_NOT_ATTACHED)
+		}
+		if (isSpeakerAttached() && !prefs.getBoolean(Common.KEY_SPEAK_SPEAKER_ATTACHED, false)) {
+			ignoreReasons.add(IgnoreReason.SPEAKER_ATTACHED)
 		}
 		return ignoreReasons
 	}
@@ -418,16 +426,59 @@ class Service : NotificationListenerService() {
 		return isScreenOn
 	}
 
-	private fun isHeadsetOn(): Boolean {
+	private fun isHeadgearAttached(): Boolean {
 		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			audioMan.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any {
-				it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+				isBLEHeadset(it)
+						|| isWiredHeadphoneOrHeadset(it)
+						|| isBluetoothSCO(it)
 			}
 		} else {
+			// In case of really old API we cannot tell what the generic bluetooth device is
 			@Suppress("DEPRECATION")
 			audioMan.isBluetoothA2dpOn || audioMan.isWiredHeadsetOn
 		}
 	}
+
+	private fun isSpeakerAttached(): Boolean {
+		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			val devices = audioMan.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+			(devices.any { isGenericBluetooth(it) } && devices.none { isBluetoothSCO(it) })
+					|| devices.any { isBLESpeaker(it) }
+		} else {
+			@Suppress("DEPRECATION") (audioMan.isBluetoothA2dpOn)
+		}
+	}
+
+	private fun isBLEHeadset(device: AudioDeviceInfo): Boolean =
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			device.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+		} else false
+
+	private fun isBLESpeaker(device: AudioDeviceInfo): Boolean =
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			device.type == AudioDeviceInfo.TYPE_BLE_SPEAKER
+		} else false
+
+	private fun isWiredHeadphoneOrHeadset(device: AudioDeviceInfo): Boolean =
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+					|| device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
+					|| device.type == AudioDeviceInfo.TYPE_USB_HEADSET
+		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+					|| device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
+		} else false
+
+	private fun isGenericBluetooth(device: AudioDeviceInfo): Boolean =
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
+		} else false
+
+	private fun isBluetoothSCO(device: AudioDeviceInfo): Boolean =
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+		} else false
 
 	private object CheckScreen {
 		private lateinit var powerMan: PowerManager

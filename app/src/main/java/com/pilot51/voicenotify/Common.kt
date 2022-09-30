@@ -32,6 +32,8 @@ object Common {
 	const val KEY_SPEAK_SCREEN_ON = "speakScreenOn"
 	const val KEY_SPEAK_HEADSET_OFF = "speakHeadsetOff"
 	const val KEY_SPEAK_HEADSET_ON = "speakHeadsetOn"
+	const val KEY_SPEAK_SPEAKER_ATTACHED = "speakSpeakerAttached"
+	const val KEY_SPEAK_SPEAKER_NOT_ATTACHED = "speakSpeakerNotAttached"
 	const val KEY_SPEAK_SILENT_ON = "speakSilentOn"
 
 	/**
